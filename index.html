@@ -1,1 +1,580 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+    <title>مخزون الوجبات</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: Arial, Tahoma, sans-serif;
+            background: #ffffff;
+            color: #111;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+            font-size: 30px;
+        }
+
+        .filters {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) 100px;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .filters input,
+        .filters button {
+            height: 45px;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 0 15px;
+            font-size: 16px;
+            background: white;
+        }
+
+        .filters input {
+            text-align: right;
+        }
+
+        .filters button {
+            cursor: pointer;
+            background: #eeeeee;
+        }
+
+        .table-wrapper {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 750px;
+            text-align: center;
+        }
+
+        th {
+            background: #f2f2f2;
+            font-size: 17px;
+            padding: 12px 8px;
+            border: 1px solid #ddd;
+        }
+
+        td {
+            padding: 10px 8px;
+            border: 1px solid #ddd;
+            font-size: 17px;
+        }
+
+        td img {
+            width: 70px;
+            height: 80px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            font-size: 18px;
+        }
+
+        .empty {
+            text-align: center;
+            padding: 30px;
+            font-size: 18px;
+        }
+
+        .status {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 14px;
+            color: #777;
+        }
+
+        @media (max-width: 700px) {
+            body {
+                padding: 10px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            .filters {
+                grid-template-columns: 1fr;
+            }
+
+            .filters button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h1>مخزون الوجبات</h1>
+
+    <div class="filters">
+
+        <input
+            type="text"
+            id="modelSearch"
+            placeholder="بحث بالموديل..."
+        >
+
+        <input
+            type="text"
+            id="colorSearch"
+            placeholder="بحث باللون..."
+        >
+
+        <input
+            type="text"
+            id="sizeSearch"
+            placeholder="بحث بالمقاس..."
+        >
+
+        <button onclick="clearFilters()">مسح</button>
+
+    </div>
+
+    <div class="status" id="status">
+        جاري تحميل البيانات...
+    </div>
+
+    <div class="table-wrapper">
+
+        <table>
+
+            <thead>
+                <tr>
+                    <th>الصورة</th>
+                    <th>الموديل</th>
+                    <th>اللون</th>
+                    <th>المقاس</th>
+                    <th>عدد القطع</th>
+                    <th>عدد الوجبات</th>
+                </tr>
+            </thead>
+
+            <tbody id="mealsTable">
+
+                <tr>
+                    <td colspan="6" class="loading">
+                        جاري تحميل الوجبات...
+                    </td>
+                </tr>
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+
+<script>
+
+    // =========================================================
+    // Firebase Realtime Database
+    // نفس قاعدة البيانات المستخدمة في برنامج Python
+    // =========================================================
+
+    const FIREBASE_URL =
+    "https://cut-meals-project-default-rtdb.asia-southeast1.firebasedatabase.app";
+
+    let allMeals = {};
+    let modelsData = {};
+
+
+    // =========================================================
+    // جلب الوجبات من Firebase
+    // =========================================================
+
+    async function loadMeals() {
+
+        try {
+
+            const response = await fetch(
+                FIREBASE_URL + "/cut_meals.json"
+            );
+
+            if (!response.ok) {
+                throw new Error("فشل الاتصال بقاعدة البيانات");
+            }
+
+            const data = await response.json();
+
+            allMeals = data || {};
+
+            await loadModels();
+
+            displayMeals();
+
+            document.getElementById("status").textContent =
+                "آخر تحديث: " +
+                new Date().toLocaleTimeString("ar-JO");
+
+        } catch (error) {
+
+            console.error(error);
+
+            document.getElementById("status").textContent =
+                "حدث خطأ في تحميل البيانات";
+
+            document.getElementById("mealsTable").innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty">
+                        تعذر تحميل البيانات
+                    </td>
+                </tr>
+            `;
+        }
+    }
+
+
+    // =========================================================
+    // جلب صور الموديلات
+    // =========================================================
+
+    async function loadModels() {
+
+        try {
+
+            const response = await fetch(
+                FIREBASE_URL + "/models.json"
+            );
+
+            if (!response.ok) {
+                modelsData = {};
+                return;
+            }
+
+            modelsData = await response.json() || {};
+
+        } catch (error) {
+
+            console.log("تعذر تحميل صور الموديلات");
+
+            modelsData = {};
+        }
+    }
+
+
+    // =========================================================
+    // عرض الوجبات
+    // =========================================================
+
+    function displayMeals() {
+
+        const modelSearch =
+            document.getElementById("modelSearch")
+                .value
+                .trim()
+                .toLowerCase();
+
+        const colorSearch =
+            document.getElementById("colorSearch")
+                .value
+                .trim()
+                .toLowerCase();
+
+        const sizeSearch =
+            document.getElementById("sizeSearch")
+                .value
+                .trim()
+                .toLowerCase();
+
+
+        // =====================================================
+        // تجميع الوجبات
+        //
+        // نفس:
+        // الموديل + اللون + المقاس
+        //
+        // يصبح صف واحد
+        // =====================================================
+
+        const grouped = {};
+
+
+        Object.keys(allMeals).forEach(barcode => {
+
+            const meal = allMeals[barcode];
+
+            if (!meal) {
+                return;
+            }
+
+
+            // نعرض الموجود بالمخزون فقط
+
+            if (meal.status !== "in_stock") {
+                return;
+            }
+
+
+            const model = String(meal.model || "");
+            const color = String(meal.color || "");
+            const size = String(meal.size || "");
+
+            const quantity =
+                parseInt(meal.quantity || 0);
+
+
+            if (quantity <= 0) {
+                return;
+            }
+
+
+            // =================================================
+            // الفلترة
+            // =================================================
+
+            if (
+                modelSearch &&
+                !model.toLowerCase().includes(modelSearch)
+            ) {
+                return;
+            }
+
+            if (
+                colorSearch &&
+                !color.toLowerCase().includes(colorSearch)
+            ) {
+                return;
+            }
+
+            if (
+                sizeSearch &&
+                !size.toLowerCase().includes(sizeSearch)
+            ) {
+                return;
+            }
+
+
+            // =================================================
+            // مفتاح التجميع
+            // =================================================
+
+            const key =
+                model + "||" +
+                color + "||" +
+                size;
+
+
+            if (!grouped[key]) {
+
+                grouped[key] = {
+                    model: model,
+                    color: color,
+                    size: size,
+
+                    // مجموع القطع
+                    quantity: 0,
+
+                    // عدد الوجبات
+                    meals: 0,
+
+                    barcode: barcode
+                };
+
+            }
+
+
+            // عدد القطع الموجودة
+
+            grouped[key].quantity += quantity;
+
+
+            // هذه وجبة واحدة
+
+            grouped[key].meals += 1;
+
+        });
+
+
+        renderTable(grouped);
+
+    }
+
+
+    // =========================================================
+    // رسم الجدول
+    // =========================================================
+
+    function renderTable(grouped) {
+
+        const tbody =
+            document.getElementById("mealsTable");
+
+        tbody.innerHTML = "";
+
+
+        const rows = Object.values(grouped);
+
+
+        if (rows.length === 0) {
+
+            tbody.innerHTML = `
+                <tr>
+                    <td colspan="6" class="empty">
+                        لا توجد وجبات مطابقة
+                    </td>
+                </tr>
+            `;
+
+            return;
+        }
+
+
+        rows.forEach(item => {
+
+            let imageUrl = "";
+
+
+            // البحث عن صورة الموديل
+
+            if (modelsData[item.model]) {
+
+                imageUrl =
+                    modelsData[item.model].image_url || "";
+
+            }
+
+
+            const imageHTML = imageUrl
+                ? `<img src="${imageUrl}" alt="${item.model}">`
+                : `<span>لا توجد صورة</span>`;
+
+
+            const row = document.createElement("tr");
+
+
+            row.innerHTML = `
+
+                <td>
+                    ${imageHTML}
+                </td>
+
+                <td>
+                    ${escapeHTML(item.model)}
+                </td>
+
+                <td>
+                    ${escapeHTML(item.color)}
+                </td>
+
+                <td>
+                    ${escapeHTML(item.size)}
+                </td>
+
+                <td>
+                    ${item.quantity}
+                </td>
+
+                <td>
+                    ${item.meals}
+                </td>
+
+            `;
+
+
+            tbody.appendChild(row);
+
+        });
+
+    }
+
+
+    // =========================================================
+    // حماية النصوص
+    // =========================================================
+
+    function escapeHTML(text) {
+
+        return String(text)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+
+    }
+
+
+    // =========================================================
+    // مسح البحث
+    // =========================================================
+
+    function clearFilters() {
+
+        document.getElementById("modelSearch").value = "";
+        document.getElementById("colorSearch").value = "";
+        document.getElementById("sizeSearch").value = "";
+
+        displayMeals();
+
+    }
+
+
+    // =========================================================
+    // بحث تفاعلي
+    // =========================================================
+
+    document
+        .getElementById("modelSearch")
+        .addEventListener("input", displayMeals);
+
+    document
+        .getElementById("colorSearch")
+        .addEventListener("input", displayMeals);
+
+    document
+        .getElementById("sizeSearch")
+        .addEventListener("input", displayMeals);
+
+
+    // =========================================================
+    // تحميل أول مرة
+    // =========================================================
+
+    loadMeals();
+
+
+    // =========================================================
+    // تحديث تلقائي كل ثانيتين
+    //
+    // إذا دخلت وجبة من Python
+    // تظهر هنا
+    //
+    // إذا أخرجت وجبة
+    // تختفي/تتحدث هنا
+    // =========================================================
+
+    setInterval(loadMeals, 2000);
+
+</script>
+
+</body>
+</html>
