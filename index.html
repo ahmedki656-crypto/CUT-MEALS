@@ -7,124 +7,192 @@
     <title>مخزون الوجبات</title>
 
     <style>
-        * {
-            box-sizing: border-box;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        body {
-            margin: 0;
-            padding: 20px;
-            font-family: Arial, Tahoma, sans-serif;
-            background: #ffffff;
-            color: #111;
-        }
+body {
+    margin: 0;
+    padding: 10px;
+    font-family: Arial, Tahoma, sans-serif;
+    direction: rtl;
+    background: white;
+    color: #111;
+}
 
-        .container {
-            max-width: 1200px;
-            margin: auto;
-        }
+/* العنوان */
+h1 {
+    text-align: center;
+    margin: 8px 0 14px;
+    font-size: 27px;
+    font-weight: bold;
+}
 
-        h1 {
-            text-align: center;
-            margin-bottom: 25px;
-            font-size: 30px;
-        }
+/* منطقة البحث */
+.filters {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+    width: 100%;
+}
 
-        .filters {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr) 100px;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
+.filters input {
+    width: 155px;
+    height: 38px;
+    padding: 5px 10px;
+    font-size: 16px;
+    border: 1px solid #ddd;
+    border-radius: 9px;
+    outline: none;
+}
 
-        .filters input,
-        .filters button {
-            height: 45px;
-            border: 1px solid #ddd;
-            border-radius: 10px;
-            padding: 0 15px;
-            font-size: 16px;
-            background: white;
-        }
+.filters button {
+    width: 65px;
+    height: 38px;
+    font-size: 15px;
+    border: 1px solid #ddd;
+    border-radius: 9px;
+    background: #eee;
+    cursor: pointer;
+}
 
-        .filters input {
-            text-align: right;
-        }
+/* الجدول */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: 16px;
+}
 
-        .filters button {
-            cursor: pointer;
-            background: #eeeeee;
-        }
+th {
+    height: 40px;
+    padding: 5px;
+    background: #f3f3f3;
+    border: 1px solid #d5d5d5;
+    font-size: 16px;
+    font-weight: bold;
+}
 
-        .table-wrapper {
-            width: 100%;
-            overflow-x: auto;
-        }
+td {
+    height: 62px;
+    padding: 4px;
+    text-align: center;
+    vertical-align: middle;
+    border: 1px solid #d5d5d5;
+    font-size: 16px;
+}
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            min-width: 750px;
-            text-align: center;
-        }
+/* الصورة */
+td img {
+    width: 48px;
+    height: 48px;
+    object-fit: cover;
+    border-radius: 7px;
+    display: block;
+    margin: auto;
+}
 
-        th {
-            background: #f2f2f2;
-            font-size: 17px;
-            padding: 12px 8px;
-            border: 1px solid #ddd;
-        }
+/* أحجام الأعمدة */
+th:nth-child(1),
+td:nth-child(1) {
+    width: 13%;
+}
 
-        td {
-            padding: 10px 8px;
-            border: 1px solid #ddd;
-            font-size: 17px;
-        }
+th:nth-child(2),
+td:nth-child(2) {
+    width: 22%;
+}
 
-        td img {
-            width: 70px;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 8px;
-        }
+th:nth-child(3),
+td:nth-child(3) {
+    width: 18%;
+}
 
-        .loading {
-            text-align: center;
-            padding: 30px;
-            font-size: 18px;
-        }
+th:nth-child(4),
+td:nth-child(4) {
+    width: 14%;
+}
 
-        .empty {
-            text-align: center;
-            padding: 30px;
-            font-size: 18px;
-        }
+th:nth-child(5),
+td:nth-child(5) {
+    width: 16%;
+}
 
-        .status {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 14px;
-            color: #777;
-        }
+th:nth-child(6),
+td:nth-child(6) {
+    width: 17%;
+}
 
-        @media (max-width: 700px) {
-            body {
-                padding: 10px;
-            }
+/* رسالة عدم وجود بيانات */
+#emptyMessage {
+    text-align: center;
+    padding: 30px 10px;
+    font-size: 18px;
+}
 
-            h1 {
-                font-size: 24px;
-            }
+/* وقت آخر تحديث */
+#lastUpdate {
+    text-align: center;
+    font-size: 14px;
+    color: #777;
+    margin: 8px 0;
+}
 
-            .filters {
-                grid-template-columns: 1fr;
-            }
+/* للجوال */
+@media (max-width: 600px) {
 
-            .filters button {
-                width: 100%;
-            }
-        }
-    </style>
+    body {
+        padding: 7px;
+    }
+
+    h1 {
+        font-size: 24px;
+        margin: 5px 0 12px;
+    }
+
+    .filters {
+        gap: 5px;
+        margin-bottom: 9px;
+    }
+
+    .filters input {
+        width: 27%;
+        height: 35px;
+        font-size: 13px;
+        padding: 4px 6px;
+    }
+
+    .filters button {
+        width: 58px;
+        height: 35px;
+        font-size: 14px;
+    }
+
+    table {
+        font-size: 13px;
+    }
+
+    th {
+        height: 36px;
+        padding: 3px;
+        font-size: 13px;
+    }
+
+    td {
+        height: 54px;
+        padding: 2px;
+        font-size: 13px;
+    }
+
+    td img {
+        width: 42px;
+        height: 42px;
+        border-radius: 6px;
+    }
+}
+</style>
 </head>
 
 <body>
